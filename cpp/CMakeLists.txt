@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(oysyn_search CXX)
+project(searchx CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,14 +47,14 @@ message(STATUS "CURL library: ${CURL_LIBRARY}")
 message(STATUS "CURL include: ${CURL_INCLUDE_DIR}")
 
 # === Build ===
-add_executable(oysyn_search main.cpp)
+add_executable(searchx main.cpp)
 
-target_include_directories(oysyn_search PRIVATE
+target_include_directories(searchx PRIVATE
     ${CMAKE_SOURCE_DIR}
     ${CURL_INCLUDE_DIR}
 )
 
-target_link_libraries(oysyn_search PRIVATE
+target_link_libraries(searchx PRIVATE
     ${CURL_LIBRARY}
     httplib::httplib
     nlohmann_json::nlohmann_json

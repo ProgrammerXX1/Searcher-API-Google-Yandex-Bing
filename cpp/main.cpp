@@ -81,8 +81,8 @@ int main(int argc, char* argv[]) {
         }
     });
 
-    std::cout << "[server] OySyn Search C++ starting on port " << port << "\n";
-    std::cout << "[server] Engines: Google(Serper), Yandex(API), DuckDuckGo, Bing\n";
+    std::cout << "[*] SearchX C++ engine starting on port " << port << "\n";
+    std::cout << "[*] Engines: Google(Serper), Yandex(Cloud API)\n";
     svr.listen("0.0.0.0", port);
     return 0;
 }
