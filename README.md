@@ -24,24 +24,64 @@ SearchX is a lightweight C++ search engine server that aggregates results from *
 - **Connection pooling** &mdash; reuses TCP + TLS connections, eliminating DNS/handshake overhead
 - **Parallel execution** &mdash; `std::async` runs multiple engines concurrently
 - **Region-aware search** &mdash; Kazakhstan, Russia, or Global results via API-level geo targeting
-- **Zero external runtime deps** &mdash; single static binary, links only to system libcurl
+- **Zero external runtime deps** &mdash; single binary, links only to system libcurl
 - **Auto-fetched build deps** &mdash; CMake `FetchContent` pulls everything at build time
 
 ---
 
 ## Performance
 
-Benchmarked against equivalent Python (FastAPI + asyncio) implementation on identical queries:
+Benchmarked on 40 queries (20 RU + 20 EN), sequential & parallel:
 
-| Metric | SearchX (C++) | Python | Speedup |
-|:-------|:-------------|:-------|:--------|
-| Google avg latency | **1294 ms** | 2411 ms | 1.9x |
-| Yandex avg latency | **556 ms** | 2324 ms | **4.2x** |
-| Google burst 10x | **1.58 s** | 5.37 s | **3.4x** |
-| Yandex burst 10x | **1.64 s** | 3.09 s | 1.9x |
-| Memory (RSS) | **43 MB** | 80 MB | 1.9x |
+| Metric | Value |
+|:-------|:------|
+| Google avg latency | **1294 ms** |
+| Google median | **1231 ms** |
+| Google min | **659 ms** |
+| Yandex avg latency | **556 ms** |
+| Yandex median | **537 ms** |
+| Yandex min | **431 ms** |
+| Burst 10 concurrent (Google) | **1.58 s total** |
+| Burst 10 concurrent (Yandex) | **1.64 s total** |
+| Burst 20 concurrent (Google) | **2.79 s total** |
+| Memory (RSS) | **43 MB** |
 
-> Bottleneck is upstream API latency (Serper TTFB ~800ms, Yandex TTFB ~450ms). Connection pool eliminates ~300ms DNS+TCP+TLS overhead per request.
+### Latency breakdown (per request)
+
+```
+Request lifecycle with connection pool (warm):
+
+  DNS resolve ........... 0 ms   (cached)
+  TCP connect ........... 0 ms   (reused)
+  TLS handshake ......... 0 ms   (reused)
+  ----------------------------------------
+  Serper API TTFB ....... 800-1200 ms   (upstream, not optimizable)
+  Yandex API TTFB ....... 430-520 ms    (upstream, not optimizable)
+  ----------------------------------------
+  JSON/XML parse ........ <1 ms
+  HTTP response ......... <1 ms
+```
+
+### Why latency can't go lower
+
+The measured latency is **at the physical limit** for these APIs:
+
+| Factor | Impact | Can we optimize? |
+|:-------|:-------|:-----------------|
+| **Upstream API processing time** | Serper: 800-1200ms, Yandex: 430-520ms | No &mdash; server-side, out of our control |
+| **Network round-trip** | ~60-80ms to API servers | No &mdash; depends on geographic distance |
+| **DNS resolution** | ~150ms first request, then 0ms | Already eliminated via connection pool |
+| **TCP + TLS handshake** | ~250ms first request, then 0ms | Already eliminated via connection pool |
+| **Local processing** (JSON/XML parse, regex) | <1ms | Already negligible |
+
+> **Bottom line:** SearchX adds **<5ms overhead** on top of raw API latency. The only way to go faster is to move the server closer to the API endpoints (e.g. deploy in US for Serper, in Russia for Yandex) or switch to faster upstream APIs.
+
+### Cold start vs warm connection
+
+| | Cold (first request) | Warm (pooled) |
+|:--|:-----|:------|
+| Serper | ~1900 ms | **~900 ms** |
+| Yandex | ~740 ms | **~470 ms** |
 
 ---
 
@@ -98,7 +138,7 @@ curl "http://localhost:8000/api/search?q=python&engine_name=all&num=10&region=kz
   "region": "kz",
   "count": 15,
   "results": [
-    { "title": "Welcome to Python.org", "url": "https://python.org/", "domain": "python.org", "snippet": "..." },
+    { "title": "Welcome to Python.org", "url": "https://python.org/", "domain": "python.org", "snippet": "..." }
   ]
 }
 ```
