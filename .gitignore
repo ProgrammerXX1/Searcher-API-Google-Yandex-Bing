@@ -1,25 +1,11 @@
 # Credentials
 .env
 
-# Build
+# Build artifacts
 cpp/build/
-cpp/deps/*.deb
-cpp/deps/*_extracted/
-cpp/deps/*.so
-cpp/deps/httplib.h
-cpp/deps/pugixml.cpp
-cpp/deps/include/
-cpp/deps/nlohmann/
-
-# Python (legacy)
-venv/
-__pycache__/
-*.pyc
 
 # IDE
 .vscode/
 .idea/
 *.swp
-
-# Reports
-*.docx
+*~
