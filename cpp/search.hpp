@@ -6,6 +6,9 @@
 #include <algorithm>
 #include <set>
 #include <sstream>
+#include <chrono>
+#include <thread>
+#include <cstdlib>
 #include <nlohmann/json.hpp>
 #include <pugixml.hpp>
 #include "config.hpp"
@@ -87,88 +90,68 @@ class SearchEngine {
 public:
     explicit SearchEngine(Config& c) : cfg(c) {}
 
-    // ==================== Google (Serper API) ====================
-    std::vector<SearchResult> search_google_serper(const std::string& query, int num,
-                                                    const std::string& region) {
-        std::string gl = "us", hl = "en";
-        if (region == "kz") { gl = "kz"; hl = "ru"; }
-        else if (region == "ru") { gl = "ru"; hl = "ru"; }
-
-        json body = {{"q", query}, {"num", num}, {"gl", gl}, {"hl", hl}};
-        auto resp = http.post_json(
-            "https://google.serper.dev/search",
-            body.dump(),
-            "X-API-KEY: " + cfg.serper_key,
-            10000
-        );
-
-        std::vector<SearchResult> results;
-        if (resp.status != 200) return results;
-
-        auto data = json::parse(resp.body, nullptr, false);
-        if (data.is_discarded() || !data.contains("organic")) return results;
-
-        for (auto& item : data["organic"]) {
-            if ((int)results.size() >= num) break;
-            std::string url = item.value("link", "");
-            if (url.empty()) continue;
-            results.push_back({
-                item.value("title", ""),
-                url,
-                extract_domain(url),
-                item.value("snippet", ""),
-            });
-        }
-        return results;
-    }
-
-    // ==================== Google (Startpage fallback) ====================
+    // ==================== Google (Decodo residential scrape of Startpage) ====================
     std::vector<SearchResult> search_google_startpage(const std::string& query, int num) {
         std::string form = "query=" + url_encode(query) + "&cat=web&language=english";
-        auto resp = http.post_form(
-            "https://www.startpage.com/sp/search",
-            form,
-            cfg.google_proxy_url(),
-            20000
-        );
 
-        std::vector<SearchResult> results;
-        if (resp.status != 200) return results;
+        // Parse with regex — title link is <a class="result-title result-link" href=...>
+        // followed (after an optional inline <style>) by the title inside <h2>.
+        std::regex link_re(R"xx(class="result-title result-link[^"]*"[^>]*href="(https?://[^"]+)"[\s\S]{0,400}?<h2[^>]*>(?:<[^>]+>)*([^<]+))xx");
+        std::regex snippet_re(R"xx(class="description[^"]*">([\s\S]*?)</p>)xx");
 
-        // Parse with regex — Startpage has consistent structure
-        std::regex link_re(R"xx(class="wgl-title-link-container[^"]*"[^>]*>\s*<a[^>]*href="(https?://[^"]+)"[^>]*>([^<]+))xx");
-        std::regex snippet_re(R"xx(<p class="[^"]*w-gl__description[^"]*">([^<]+))xx");
-
-        auto body = resp.body;
-        auto it = std::sregex_iterator(body.begin(), body.end(), link_re);
-        auto end = std::sregex_iterator();
-
-        for (; it != end && (int)results.size() < num; ++it) {
-            std::string url = (*it)[1].str();
-            std::string title = strip_tags((*it)[2].str());
-            if (url.find("startpage") != std::string::npos) continue;
-
-            // Find snippet near this position
-            std::string snippet;
-            auto pos = it->position() + it->length();
-            auto sub = body.substr(pos, 1000);
-            std::smatch sm;
-            if (std::regex_search(sub, sm, snippet_re)) {
-                snippet = strip_tags(sm[1].str());
+        // Decodo residential, country-targeted + browser-fingerprint headers + HTTP/2 holds
+        // ~95% on Startpage with no volume cliff. Remaining misses are isolated challenge
+        // pages; each retry rotates both the exit country and the IP to clear them.
+        static const char* countries[] = {"us", "gb", "de"};
+        const int max_attempts = 3;
+        for (int attempt = 0; attempt < max_attempts; ++attempt) {
+            if (attempt > 0) {
+                std::this_thread::sleep_for(
+                    std::chrono::milliseconds(400 + (std::rand() % 600)));
             }
 
-            results.push_back({title, url, extract_domain(url), snippet});
+            auto resp = http.post_form(
+                "https://www.startpage.com/sp/search",
+                form,
+                cfg.google_scrape_proxy_url(countries[attempt % 3]),
+                20000,
+                /*fresh_connection=*/true,
+                /*browser=*/true
+            );
+            if (resp.status != 200) continue;
+
+            std::vector<SearchResult> results;
+            auto body = resp.body;
+            auto it = std::sregex_iterator(body.begin(), body.end(), link_re);
+            auto end = std::sregex_iterator();
+
+            for (; it != end && (int)results.size() < num; ++it) {
+                std::string url = (*it)[1].str();
+                std::string title = strip_tags((*it)[2].str());
+                if (url.find("startpage") != std::string::npos) continue;
+
+                // Find snippet near this position
+                std::string snippet;
+                auto pos = it->position() + it->length();
+                auto sub = body.substr(pos, 1000);
+                std::smatch sm;
+                if (std::regex_search(sub, sm, snippet_re)) {
+                    snippet = strip_tags(sm[1].str());
+                }
+
+                results.push_back({title, url, extract_domain(url), snippet});
+            }
+
+            if (!results.empty()) return results;  // success — stop retrying
         }
-        return results;
+        return {};  // all attempts returned a challenge/empty page
     }
 
     // ==================== Google (combined) ====================
     std::vector<SearchResult> search_google(const std::string& query, int num,
-                                             const std::string& region) {
-        if (!cfg.serper_key.empty()) {
-            auto r = search_google_serper(query, num, region);
-            if (!r.empty()) return r;
-        }
+                                             const std::string& /*region*/) {
+        // Google results now come entirely from Decodo (residential scrape of Startpage),
+        // no external SERP API.
         return search_google_startpage(query, num);
     }
 
@@ -392,28 +375,138 @@ public:
         return merged;
     }
 
+    // ==================== AI Summary (YandexGPT) ====================
+    std::string ai_summarize(const std::string& query, const std::vector<SearchResult>& results) {
+        if (cfg.yandex_api_key.empty() || cfg.yandex_folder_id.empty() || results.empty())
+            return "";
+
+        // Build context from top results
+        std::string context;
+        for (int i = 0; i < std::min((int)results.size(), 5); i++) {
+            context += std::to_string(i + 1) + ". " + results[i].title;
+            if (!results[i].snippet.empty())
+                context += " — " + results[i].snippet;
+            context += "\n";
+        }
+
+        json body = {
+            {"modelUri", "gpt://" + cfg.yandex_folder_id + "/yandexgpt-lite/latest"},
+            {"completionOptions", {{"stream", false}, {"temperature", 0.3}, {"maxTokens", 400}}},
+            {"messages", {
+                {{"role", "system"}, {"text",
+                    "You are a search assistant. Based on the search results provided, "
+                    "give a concise and helpful answer to the user's query. "
+                    "Answer in the same language as the query. 3-5 sentences max. "
+                    "Do not mention that you are looking at search results."}},
+                {{"role", "user"}, {"text", "Query: " + query + "\n\nSearch results:\n" + context}},
+            }},
+        };
+
+        auto resp = http.post_json(
+            "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+            body.dump(),
+            "Authorization: Api-Key " + cfg.yandex_api_key,
+            15000
+        );
+
+        if (resp.status != 200) return "";
+
+        auto data = json::parse(resp.body, nullptr, false);
+        if (data.is_discarded()) return "";
+
+        try {
+            return data["result"]["alternatives"][0]["message"]["text"].get<std::string>();
+        } catch (...) {
+            return "";
+        }
+    }
+
+    // ==================== Chat (follow-up) ====================
+    json chat(const json& messages) {
+        using clock = std::chrono::steady_clock;
+
+        if (cfg.yandex_api_key.empty() || cfg.yandex_folder_id.empty())
+            return {{"error", "no API key"}, {"reply", ""}};
+
+        json gpt_messages = json::array();
+        gpt_messages.push_back({
+            {"role", "system"},
+            {"text", "You are a helpful search assistant. Answer concisely in the same language the user writes. "
+                     "If the user asks a follow-up, use the conversation context to answer."}
+        });
+
+        for (auto& msg : messages) {
+            gpt_messages.push_back({
+                {"role", msg.value("role", "user")},
+                {"text", msg.value("content", "")}
+            });
+        }
+
+        json body = {
+            {"modelUri", "gpt://" + cfg.yandex_folder_id + "/yandexgpt-lite/latest"},
+            {"completionOptions", {{"stream", false}, {"temperature", 0.4}, {"maxTokens", 500}}},
+            {"messages", gpt_messages},
+        };
+
+        auto t0 = clock::now();
+        auto resp = http.post_json(
+            "https://llm.api.cloud.yandex.net/foundationModels/v1/completion",
+            body.dump(),
+            "Authorization: Api-Key " + cfg.yandex_api_key,
+            15000
+        );
+        auto t1 = clock::now();
+        long ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+
+        if (resp.status != 200)
+            return {{"error", "API error"}, {"reply", ""}, {"ms", ms}};
+
+        auto data = json::parse(resp.body, nullptr, false);
+        std::string reply;
+        try {
+            reply = data["result"]["alternatives"][0]["message"]["text"].get<std::string>();
+        } catch (...) {}
+
+        return {{"error", nullptr}, {"reply", reply}, {"ms", ms}};
+    }
+
     // ==================== Main dispatch ====================
     json search(const std::string& query, const std::string& engine, int num,
-                const std::string& region) {
+                const std::string& region, bool with_ai = false) {
+        using clock = std::chrono::steady_clock;
+
+        auto t0 = clock::now();
         std::vector<SearchResult> results;
 
         if (engine == "google") results = search_google(query, num, region);
         else if (engine == "yandex") results = search_yandex(query, num, region);
         else if (engine == "bing") results = search_bing(query, num, region);
-        else if (engine == "scholar") results = {}; // TODO
         else if (engine == "all") results = search_all(query, num, region);
         else results = search_duckduckgo(query, num, region);
+
+        auto t1 = clock::now();
+        long search_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 
         json j_results = json::array();
         for (auto& r : results) j_results.push_back(r.to_json());
 
-        return {
+        json response = {
             {"error", nullptr},
             {"query", query},
             {"engine", engine},
             {"region", region},
             {"count", results.size()},
             {"results", j_results},
+            {"search_ms", search_ms},
         };
+
+        if (with_ai && !results.empty()) {
+            auto t2 = clock::now();
+            response["ai_summary"] = ai_summarize(query, results);
+            auto t3 = clock::now();
+            response["ai_ms"] = std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count();
+        }
+
+        return response;
     }
 };

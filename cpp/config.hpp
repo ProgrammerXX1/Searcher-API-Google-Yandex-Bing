@@ -11,7 +11,6 @@ struct Config {
     std::string google_user, google_pass, google_host, google_port;
 
     // API keys
-    std::string serper_key;
     std::string yandex_api_key, yandex_folder_id;
 
     void load(const std::string& env_path) {
@@ -43,7 +42,6 @@ struct Config {
         google_host = get("DECODO_GOOGLE_HOST", "gate.decodo.com");
         google_port = get("DECODO_GOOGLE_PORT", "10000");
 
-        serper_key = get("SERPER_KEY");
         yandex_api_key = get("YANDEX_API_KEY");
         yandex_folder_id = get("YANDEX_FOLDER_ID");
     }
@@ -57,5 +55,12 @@ struct Config {
 
     std::string google_proxy_url() const {
         return "http://" + google_user + ":" + google_pass + "@" + google_host + ":" + google_port;
+    }
+
+    // Country-targeted rotating residential exit (base gate :7000). Each request gets a
+    // fresh in-country IP; combined with browser headers this clears Startpage's anti-bot.
+    std::string google_scrape_proxy_url(const std::string& country = "us") const {
+        return "http://user-" + google_user + "-country-" + country + ":" + google_pass +
+               "@" + region_global_host + ":7000";
     }
 };

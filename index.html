@@ -7,63 +7,110 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-cyan: #00f0ff;
-            --neon-magenta: #ff00aa;
-            --neon-purple: #b300ff;
-            --neon-green: #39ff14;
-            --neon-yellow: #fff200;
-            --dark-bg: #050510;
-            --panel-bg: rgba(10, 10, 30, 0.85);
-            --panel-border: rgba(0, 240, 255, 0.15);
-            --text-primary: #e0e8ff;
-            --text-dim: #5a6080;
+            --cyan: #00f0ff;
+            --magenta: #ff00aa;
+            --purple: #b300ff;
+            --green: #39ff14;
+            --red: #ff3355;
+            --yellow: #fff200;
+            --bg: #030311;
+            --panel: rgba(8, 8, 28, 0.92);
+            --border: rgba(0, 240, 255, 0.12);
+            --text: #d0d8f0;
+            --dim: #3a4060;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Rajdhani', sans-serif;
-            background: var(--dark-bg);
-            color: var(--text-primary);
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        /* === Animated background grid === */
-        body::before {
-            content: '';
+        /* ====== MATRIX RAIN CANVAS ====== */
+        #matrix {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background:
-                linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
             z-index: 0;
-            animation: gridScroll 20s linear infinite;
+            opacity: 0.07;
         }
 
-        @keyframes gridScroll {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(60px, 60px); }
-        }
-
-        /* === Glowing orbs === */
-        body::after {
-            content: '';
+        /* ====== ANIMATED GRID ====== */
+        .grid-bg {
             position: fixed;
-            top: -200px; right: -200px;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(179,0,255,0.08) 0%, transparent 70%);
+            top: 0; left: 0;
+            width: 200%; height: 200%;
             z-index: 0;
-            animation: orbFloat 15s ease-in-out infinite alternate;
+            background:
+                linear-gradient(rgba(0,240,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,240,255,0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridDrift 25s linear infinite;
         }
 
-        @keyframes orbFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(-100px, 200px) scale(1.3); }
+        @keyframes gridDrift {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-50px, -50px) rotate(0.5deg); }
         }
 
+        /* ====== FLOATING ORBS ====== */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .orb-1 {
+            width: 500px; height: 500px;
+            top: -150px; right: -100px;
+            background: radial-gradient(circle, rgba(179,0,255,0.12), transparent 70%);
+            animation: orbMove1 18s ease-in-out infinite alternate;
+        }
+        .orb-2 {
+            width: 400px; height: 400px;
+            bottom: -100px; left: -100px;
+            background: radial-gradient(circle, rgba(0,240,255,0.08), transparent 70%);
+            animation: orbMove2 22s ease-in-out infinite alternate;
+        }
+        .orb-3 {
+            width: 300px; height: 300px;
+            top: 50%; left: 50%;
+            background: radial-gradient(circle, rgba(255,0,170,0.06), transparent 70%);
+            animation: orbMove3 15s ease-in-out infinite alternate;
+        }
+        @keyframes orbMove1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-120px,180px) scale(1.4)} }
+        @keyframes orbMove2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(150px,-120px) scale(1.2)} }
+        @keyframes orbMove3 { 0%{transform:translate(-50%,-50%) scale(1)} 100%{transform:translate(-30%,-70%) scale(0.8)} }
+
+        /* ====== SCANLINES ====== */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px);
+        }
+
+        /* ====== HORIZONTAL SCAN BAR ====== */
+        .scan-bar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            z-index: 9999;
+            pointer-events: none;
+            animation: scanDown 8s linear infinite;
+            opacity: 0.3;
+        }
+        @keyframes scanDown { 0%{top:-2px} 100%{top:100vh} }
+
+        /* ====== CONTAINER ====== */
         .container {
             max-width: 860px;
             margin: 0 auto;
@@ -72,436 +119,598 @@
             z-index: 1;
         }
 
-        /* === Home layout === */
+        /* ====== HOME LAYOUT ====== */
         .home {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 85vh;
-            transition: all 0.5s ease;
+            min-height: 90vh;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
         .home.has-results {
             min-height: auto;
-            padding-top: 30px;
+            padding-top: 25px;
         }
 
-        /* === Logo === */
+        /* ====== LOGO ====== */
+        .logo-wrap { position: relative; margin-bottom: 8px; }
+
         .logo {
             font-family: 'Orbitron', sans-serif;
-            font-size: 64px;
+            font-size: 72px;
             font-weight: 900;
-            letter-spacing: 4px;
-            margin-bottom: 10px;
-            position: relative;
-            color: var(--neon-cyan);
+            letter-spacing: 8px;
+            color: var(--cyan);
             text-shadow:
-                0 0 10px rgba(0,240,255,0.5),
+                0 0 10px rgba(0,240,255,0.6),
                 0 0 40px rgba(0,240,255,0.3),
-                0 0 80px rgba(0,240,255,0.15);
-            animation: logoGlow 3s ease-in-out infinite alternate;
+                0 0 80px rgba(0,240,255,0.15),
+                0 0 120px rgba(0,240,255,0.08);
+            animation: logoFlicker 4s ease-in-out infinite alternate;
+            position: relative;
         }
 
-        @keyframes logoGlow {
-            0% { text-shadow: 0 0 10px rgba(0,240,255,0.5), 0 0 40px rgba(0,240,255,0.3), 0 0 80px rgba(0,240,255,0.15); }
-            100% { text-shadow: 0 0 15px rgba(0,240,255,0.7), 0 0 50px rgba(179,0,255,0.4), 0 0 100px rgba(255,0,170,0.2); }
+        /* Glitch layers */
+        .logo::before, .logo::after {
+            content: 'SEARCH X';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        .logo::before {
+            color: var(--magenta);
+            z-index: -1;
+            animation: glitch1 3s infinite;
+            clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+        }
+        .logo::after {
+            color: var(--green);
+            z-index: -1;
+            animation: glitch2 2.5s infinite;
+            clip-path: polygon(0 66%, 100% 66%, 100% 100%, 0 100%);
+        }
+
+        @keyframes glitch1 {
+            0%,92%,100% { transform: translate(0); }
+            93% { transform: translate(-3px, 1px); }
+            95% { transform: translate(2px, -1px); }
+            97% { transform: translate(-1px, 2px); }
+        }
+        @keyframes glitch2 {
+            0%,88%,100% { transform: translate(0); }
+            89% { transform: translate(2px, -1px); }
+            91% { transform: translate(-3px, 1px); }
+            94% { transform: translate(1px, -2px); }
+        }
+        @keyframes logoFlicker {
+            0%,100% { text-shadow: 0 0 10px rgba(0,240,255,0.6), 0 0 40px rgba(0,240,255,0.3), 0 0 80px rgba(0,240,255,0.15); opacity: 1; }
+            50% { text-shadow: 0 0 15px rgba(0,240,255,0.8), 0 0 60px rgba(179,0,255,0.5), 0 0 120px rgba(255,0,170,0.3); opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.8; }
+            94% { opacity: 1; }
         }
 
         .logo-sub {
             font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-            color: var(--text-dim);
-            letter-spacing: 6px;
+            font-size: 12px;
+            color: var(--dim);
+            letter-spacing: 8px;
             text-transform: uppercase;
-            margin-bottom: 40px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
-        .home.has-results .logo { font-size: 28px; margin-bottom: 4px; letter-spacing: 2px; }
-        .home.has-results .logo-sub { font-size: 10px; margin-bottom: 20px; letter-spacing: 4px; }
+        /* Terminal tag under logo */
+        .terminal-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--green);
+            margin-bottom: 35px;
+            opacity: 0.6;
+        }
+        .terminal-tag .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-        /* === Search bar === */
+        .home.has-results .logo { font-size: 26px; letter-spacing: 3px; }
+        .home.has-results .logo-sub { font-size: 9px; margin-bottom: 6px; letter-spacing: 5px; }
+        .home.has-results .terminal-tag { display: none; }
+        .home.has-results .logo::before, .home.has-results .logo::after { content: none; }
+
+        /* ====== SEARCH BAR ====== */
         .search-bar {
             display: flex;
             width: 100%;
-            max-width: 640px;
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 4px;
+            max-width: 660px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 3px;
             overflow: hidden;
-            transition: all 0.3s ease;
             position: relative;
+            transition: all 0.3s;
         }
-
         .search-bar::before {
             content: '';
             position: absolute;
-            top: -1px; left: -1px;
-            right: -1px; bottom: -1px;
-            border-radius: 4px;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-magenta));
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border-radius: 3px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple), var(--magenta), var(--cyan));
+            background-size: 300% 300%;
             z-index: -1;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.4s;
+            animation: borderShift 4s ease infinite;
         }
-
+        @keyframes borderShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         .search-bar:focus-within::before { opacity: 1; }
-        .search-bar:focus-within { border-color: transparent; }
+        .search-bar:focus-within { border-color: transparent; box-shadow: 0 0 30px rgba(0,240,255,0.08); }
 
         .search-bar input {
             flex: 1;
-            padding: 16px 22px;
+            padding: 18px 22px;
             font-size: 16px;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 500;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: 400;
             background: transparent;
             border: none;
-            color: var(--text-primary);
+            color: var(--text);
             outline: none;
             letter-spacing: 0.5px;
         }
-
-        .search-bar input::placeholder {
-            color: var(--text-dim);
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 13px;
-        }
+        .search-bar input::placeholder { color: var(--dim); font-size: 13px; }
 
         .search-bar button {
-            padding: 16px 24px;
+            padding: 18px 26px;
             background: transparent;
             border: none;
-            color: var(--neon-cyan);
-            font-size: 20px;
+            color: var(--cyan);
+            font-size: 22px;
             cursor: pointer;
             transition: all 0.3s;
-            position: relative;
         }
-
         .search-bar button:hover {
-            color: var(--neon-magenta);
-            text-shadow: 0 0 15px rgba(255,0,170,0.5);
+            color: var(--magenta);
+            text-shadow: 0 0 20px rgba(255,0,170,0.6);
+            transform: scale(1.1);
         }
 
-        /* === Engine selector === */
-        .options {
-            display: flex;
-            gap: 8px;
-            margin-top: 18px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .engine-btn {
-            padding: 6px 16px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 2px;
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .engine-btn:hover {
-            border-color: var(--neon-cyan);
-            color: var(--neon-cyan);
-        }
-
-        .engine-btn.active {
-            border-color: var(--neon-cyan);
-            color: var(--neon-cyan);
-            background: rgba(0, 240, 255, 0.05);
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.1), inset 0 0 10px rgba(0, 240, 255, 0.05);
-        }
-
-        /* === Region selector === */
-        .region-bar {
+        /* ====== CONTROLS ====== */
+        .controls {
             display: flex;
             gap: 6px;
-            margin-top: 12px;
-            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
             justify-content: center;
-        }
-
-        .region-label {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 11px;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-right: 4px;
-        }
-
-        .region-btn {
-            padding: 4px 12px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 11px;
-            background: var(--panel-bg);
-            border: 1px solid rgba(57, 255, 20, 0.12);
-            border-radius: 2px;
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .region-btn:hover {
-            border-color: var(--neon-green);
-            color: var(--neon-green);
-        }
-
-        .region-btn.active {
-            border-color: var(--neon-green);
-            color: var(--neon-green);
-            background: rgba(57, 255, 20, 0.05);
-            box-shadow: 0 0 8px rgba(57, 255, 20, 0.1), inset 0 0 8px rgba(57, 255, 20, 0.05);
-        }
-
-        /* === Results === */
-        .results {
-            margin-top: 30px;
-            width: 100%;
-            max-width: 640px;
-        }
-
-        .result {
-            padding: 18px;
-            margin-bottom: 8px;
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-left: 2px solid var(--neon-cyan);
-            border-radius: 2px;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .result:hover {
-            border-left-color: var(--neon-magenta);
-            background: rgba(10, 10, 40, 0.9);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05);
-        }
-
-        .result:hover .result-title { color: var(--neon-magenta); }
-
-        .result a { text-decoration: none; }
-
-        .result-domain {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            color: var(--neon-green);
-            margin-bottom: 6px;
-            display: flex;
             align-items: center;
-            gap: 8px;
-            opacity: 0.7;
         }
 
-        .result-domain img {
-            width: 14px; height: 14px;
-            border-radius: 1px;
-            filter: brightness(0.9);
-        }
-
-        .result-title {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 19px;
-            font-weight: 600;
-            color: var(--neon-cyan);
-            margin-bottom: 6px;
-            line-height: 1.3;
-            transition: color 0.2s;
-        }
-
-        .result-snippet {
-            font-size: 14px;
-            font-weight: 400;
-            color: #8888aa;
-            line-height: 1.6;
-        }
-
-        .result-index {
-            position: absolute;
-            top: 8px;
-            right: 12px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
-            color: rgba(0, 240, 255, 0.15);
-        }
-
-        /* === Status / Loading === */
-        .status {
-            text-align: center;
-            padding: 50px;
-            color: var(--text-dim);
+        .ctrl-btn {
+            padding: 6px 16px;
             font-family: 'Share Tech Mono', monospace;
-            font-size: 14px;
-        }
-
-        .cyber-loader {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
+            font-size: 11px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            color: var(--dim);
+            cursor: pointer;
+            transition: all 0.25s;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
             position: relative;
-            margin-bottom: 15px;
+            overflow: hidden;
         }
-
-        .cyber-loader::before, .cyber-loader::after {
+        .ctrl-btn::after {
             content: '';
             position: absolute;
-            border: 2px solid transparent;
-            border-radius: 50%;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,240,255,0.05), transparent);
+            transition: left 0.4s;
+        }
+        .ctrl-btn:hover::after { left: 100%; }
+        .ctrl-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+        .ctrl-btn.active-cyan {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.04);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.1), inset 0 0 12px rgba(0, 240, 255, 0.03);
+        }
+        .ctrl-btn.active-green {
+            border-color: var(--green);
+            color: var(--green);
+            background: rgba(57, 255, 20, 0.04);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.1), inset 0 0 12px rgba(57, 255, 20, 0.03);
+        }
+        .ctrl-btn.active-purple {
+            border-color: var(--purple);
+            color: var(--purple);
+            background: rgba(179, 0, 255, 0.04);
+            box-shadow: 0 0 12px rgba(179, 0, 255, 0.15), inset 0 0 12px rgba(179, 0, 255, 0.03);
         }
 
-        .cyber-loader::before {
+        .ctrl-sep {
+            width: 1px; height: 20px;
+            background: var(--border);
+            margin: 0 6px;
+        }
+
+        .ctrl-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            color: var(--dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-right: 2px;
+        }
+
+        /* ====== AI BOX ====== */
+        .ai-box {
+            width: 100%;
+            max-width: 660px;
+            margin-top: 22px;
+            margin-bottom: 6px;
+            padding: 20px 22px;
+            background: var(--panel);
+            border: 1px solid rgba(179, 0, 255, 0.2);
+            border-left: 3px solid var(--purple);
+            border-radius: 2px;
+            animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .ai-box::before {
+            content: '';
+            position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            border-top-color: var(--neon-cyan);
-            border-right-color: var(--neon-cyan);
-            animation: spin 0.8s linear infinite;
+            background: linear-gradient(135deg, rgba(179,0,255,0.03), transparent 50%);
+            pointer-events: none;
+        }
+        .ai-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: var(--purple);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ai-dot {
+            width: 6px; height: 6px;
+            background: var(--purple);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--purple), 0 0 16px rgba(179,0,255,0.3);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+        @keyframes dotPulse { 0%,100%{box-shadow:0 0 8px var(--purple)} 50%{box-shadow:0 0 16px var(--purple), 0 0 30px rgba(179,0,255,0.4)} }
+        .ai-text { font-size: 15px; color: var(--text); line-height: 1.8; position: relative; z-index: 1; }
+        .ai-loading {
+            color: var(--purple);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+        .ai-loading span { animation: typeFlicker 1.5s ease-in-out infinite; }
+        @keyframes typeFlicker { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+        /* Chat messages */
+        .ai-chat { margin-top: 14px; border-top: 1px solid rgba(179,0,255,0.1); padding-top: 12px; }
+        .ai-msg {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+        .ai-msg-user {
+            color: var(--cyan);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+        }
+        .ai-msg-user::before { content: '> '; opacity: 0.5; }
+        .ai-msg-bot { color: var(--text); }
+        .ai-msg-time {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8px;
+            color: var(--dim);
+            margin-left: 8px;
         }
 
-        .cyber-loader::after {
-            top: 6px; left: 6px;
-            width: calc(100% - 12px);
-            height: calc(100% - 12px);
-            border-bottom-color: var(--neon-magenta);
-            border-left-color: var(--neon-magenta);
-            animation: spin 1.2s linear infinite reverse;
+        /* Chat input */
+        .ai-input-wrap {
+            display: flex;
+            margin-top: 12px;
+            gap: 0;
+            position: relative;
+            z-index: 1;
         }
+        .ai-input {
+            flex: 1;
+            padding: 10px 14px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            background: rgba(179,0,255,0.04);
+            border: 1px solid rgba(179,0,255,0.15);
+            border-right: none;
+            border-radius: 2px 0 0 2px;
+            color: var(--text);
+            outline: none;
+        }
+        .ai-input::placeholder { color: var(--dim); }
+        .ai-input:focus { border-color: rgba(179,0,255,0.4); background: rgba(179,0,255,0.06); }
+        .ai-send {
+            padding: 10px 16px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            background: rgba(179,0,255,0.08);
+            border: 1px solid rgba(179,0,255,0.15);
+            border-radius: 0 2px 2px 0;
+            color: var(--purple);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .ai-send:hover { background: rgba(179,0,255,0.15); color: #fff; }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .error { color: #ff3355; }
+        /* ====== RESULTS ====== */
+        .results { margin-top: 24px; width: 100%; max-width: 660px; }
 
         .meta {
             font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            color: var(--text-dim);
-            margin-bottom: 20px;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--panel-border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            font-size: 11px;
+            color: var(--dim);
+            margin-bottom: 16px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
         }
-
-        .engine-tag {
+        .tag {
             display: inline-block;
             padding: 2px 10px;
             border-radius: 2px;
-            font-size: 10px;
+            font-size: 9px;
             font-family: 'Orbitron', sans-serif;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            background: rgba(0, 240, 255, 0.08);
-            color: var(--neon-cyan);
-            border: 1px solid rgba(0, 240, 255, 0.2);
         }
+        .tag-engine { background: rgba(0,240,255,0.06); color: var(--cyan); border: 1px solid rgba(0,240,255,0.15); }
+        .tag-region { background: rgba(57,255,20,0.06); color: var(--green); border: 1px solid rgba(57,255,20,0.15); }
 
-        /* === Scan line effect === */
-        .scanlines {
-            position: fixed;
+        .result {
+            padding: 18px 20px;
+            margin-bottom: 6px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-left: 2px solid var(--cyan);
+            border-radius: 2px;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .result::before {
+            content: '';
+            position: absolute;
             top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 9999;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.03) 0px,
-                rgba(0, 0, 0, 0.03) 1px,
-                transparent 1px,
-                transparent 3px
-            );
+            width: 0; height: 100%;
+            background: linear-gradient(90deg, rgba(0,240,255,0.03), transparent);
+            transition: width 0.4s;
+        }
+        .result:hover::before { width: 100%; }
+        .result:hover {
+            border-left-color: var(--magenta);
+            box-shadow: 0 0 25px rgba(0,240,255,0.04), inset 0 0 30px rgba(0,240,255,0.01);
+            transform: translateX(3px);
+        }
+        .result:hover .r-title { color: var(--magenta); text-shadow: 0 0 10px rgba(255,0,170,0.2); }
+
+        .result a { text-decoration: none; position: relative; z-index: 1; }
+
+        .r-domain {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--green);
+            margin-bottom: 5px;
+            display: flex; align-items: center; gap: 8px;
+            opacity: 0.65;
+        }
+        .r-domain img { width: 14px; height: 14px; border-radius: 1px; filter: brightness(0.85); }
+
+        .r-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 5px;
+            line-height: 1.35;
+            transition: all 0.25s;
+        }
+        .r-snippet { font-size: 13px; color: #6a6a8a; line-height: 1.65; position: relative; z-index: 1; }
+        .r-idx {
+            position: absolute;
+            top: 7px; right: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: rgba(0,240,255,0.1);
         }
 
-        /* === Scrollbar === */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--dark-bg); }
-        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.2); border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.4); }
+        /* ====== STATUS ====== */
+        .status {
+            text-align: center;
+            padding: 50px;
+            color: var(--dim);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+        }
+        .error { color: var(--red); }
 
-        /* === Responsive === */
+        /* ====== LOADER ====== */
+        .loader-wrap { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .hex-loader {
+            width: 50px; height: 50px;
+            position: relative;
+        }
+        .hex-loader span {
+            position: absolute;
+            width: 100%; height: 100%;
+            border: 2px solid transparent;
+            border-radius: 50%;
+        }
+        .hex-loader span:nth-child(1) { border-top-color: var(--cyan); animation: spin 0.9s linear infinite; }
+        .hex-loader span:nth-child(2) { border-right-color: var(--purple); animation: spin 1.4s linear infinite reverse; width: 80%; height: 80%; top: 10%; left: 10%; }
+        .hex-loader span:nth-child(3) { border-bottom-color: var(--magenta); animation: spin 1.8s linear infinite; width: 60%; height: 60%; top: 20%; left: 20%; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .load-text {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            color: var(--cyan);
+            letter-spacing: 3px;
+            animation: loadFlash 2s ease-in-out infinite;
+        }
+        @keyframes loadFlash { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+        /* ====== SCROLLBAR ====== */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.15); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,240,255,0.3); }
+
+        /* ====== ANIMATIONS ====== */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ====== RESPONSIVE ====== */
         @media (max-width: 600px) {
-            .logo { font-size: 40px; letter-spacing: 2px; }
-            .home.has-results .logo { font-size: 22px; }
+            .logo { font-size: 38px; letter-spacing: 3px; }
+            .home.has-results .logo { font-size: 20px; }
             .result { padding: 14px; }
-            .result-title { font-size: 16px; }
+            .r-title { font-size: 16px; }
+            .controls { gap: 4px; }
         }
     </style>
 </head>
 <body>
+    <canvas id="matrix"></canvas>
+    <div class="grid-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
     <div class="scanlines"></div>
+    <div class="scan-bar"></div>
 
     <div class="container">
         <div class="home" id="home">
-            <div class="logo">SEARCH X</div>
+            <div class="logo-wrap">
+                <div class="logo">SEARCH X</div>
+            </div>
             <div class="logo-sub">neural search interface</div>
+            <div class="terminal-tag">root@searchx:~$ <span class="blink">_</span></div>
 
             <div class="search-bar">
-                <input type="text" id="query" placeholder="> enter_query..." autofocus>
+                <input type="text" id="query" placeholder="> enter query..." autofocus>
                 <button onclick="doSearch()">&#9655;</button>
             </div>
 
-            <div class="options">
-                <button class="engine-btn active" data-engine="google">Google</button>
-                <button class="engine-btn" data-engine="yandex">Yandex</button>
-                <button class="engine-btn" data-engine="all">All</button>
+            <div class="controls">
+                <span class="ctrl-label">engine</span>
+                <button class="ctrl-btn active-cyan" data-engine="google">Google</button>
+                <button class="ctrl-btn" data-engine="yandex">Yandex</button>
+                <button class="ctrl-btn" data-engine="all">All</button>
+                <div class="ctrl-sep"></div>
+                <span class="ctrl-label">region</span>
+                <button class="ctrl-btn active-green" data-region="kz">KZ</button>
+                <button class="ctrl-btn" data-region="ru">RU</button>
+                <button class="ctrl-btn" data-region="global">Global</button>
+                <div class="ctrl-sep"></div>
+                <span class="ctrl-label">ai</span>
+                <button class="ctrl-btn" id="ai-toggle">OFF</button>
             </div>
 
-            <div class="region-bar">
-                <span class="region-label">proxy</span>
-                <button class="region-btn active" data-region="kz">KZ</button>
-                <button class="region-btn" data-region="ru">RU</button>
-                <button class="region-btn" data-region="global">Global</button>
-            </div>
-
+            <div id="ai-output"></div>
             <div id="output" class="results"></div>
         </div>
     </div>
 
     <script>
+        // ====== MATRIX RAIN ======
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>{}[]=/\\';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(3, 3, 17, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f0ff';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const char = chars[Math.floor(Math.random() * chars.length)];
+                ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 50);
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+        // ====== APP STATE ======
         const $ = id => document.getElementById(id);
         let currentEngine = 'google';
         let currentRegion = 'kz';
+        let aiEnabled = false;
 
-        // Engine selector
-        document.querySelectorAll('.engine-btn').forEach(btn => {
+        // Engine buttons
+        document.querySelectorAll('[data-engine]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                document.querySelectorAll('[data-engine]').forEach(b => b.classList.remove('active-cyan'));
+                btn.classList.add('active-cyan');
                 currentEngine = btn.dataset.engine;
             });
         });
 
-        // Region selector
-        document.querySelectorAll('.region-btn').forEach(btn => {
+        // Region buttons
+        document.querySelectorAll('[data-region]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                document.querySelectorAll('[data-region]').forEach(b => b.classList.remove('active-green'));
+                btn.classList.add('active-green');
                 currentRegion = btn.dataset.region;
             });
         });
 
-        $('query').addEventListener('keydown', e => {
-            if (e.key === 'Enter') doSearch();
+        // AI toggle
+        $('ai-toggle').addEventListener('click', () => {
+            aiEnabled = !aiEnabled;
+            const btn = $('ai-toggle');
+            btn.textContent = aiEnabled ? 'ON' : 'OFF';
+            btn.classList.toggle('active-purple', aiEnabled);
         });
 
+        $('query').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+        // ====== SEARCH ======
         async function doSearch() {
             const q = $('query').value.trim();
             if (!q) return;
 
             const home = $('home');
             const out = $('output');
+            const aiOut = $('ai-output');
             home.classList.add('has-results');
-            out.innerHTML = '<div class="status"><div class="cyber-loader"></div><br>SCANNING NETWORK...</div>';
+
+            out.innerHTML = '<div class="status"><div class="loader-wrap"><div class="hex-loader"><span></span><span></span><span></span></div><div class="load-text">SCANNING NETWORK</div></div></div>';
+            aiOut.innerHTML = '';
+
+            if (aiEnabled) {
+                aiOut.innerHTML = '<div class="ai-box"><div class="ai-label"><div class="ai-dot"></div>NEURAL ANALYSIS</div><div class="ai-loading"><span>PROCESSING QUERY...</span></div></div>';
+            }
 
             const params = new URLSearchParams({ q, engine_name: currentEngine, num: 15, region: currentRegion });
+            if (aiEnabled) params.set('ai', 'true');
 
             try {
                 const t0 = performance.now();
@@ -509,50 +718,89 @@
                 const data = await res.json();
                 const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
 
-                if (data.error) {
-                    out.innerHTML = '<div class="status error">ERR: ' + esc(data.error) + '</div>';
-                    return;
-                }
+                if (data.error) { out.innerHTML = '<div class="status error">ERR: ' + esc(data.error) + '</div>'; return; }
+                if (!data.results || !data.results.length) { out.innerHTML = '<div class="status">NO_RESULTS // EMPTY_SET</div>'; return; }
 
-                if (!data.results || data.results.length === 0) {
-                    out.innerHTML = '<div class="status">NO_RESULTS_FOUND</div>';
-                    return;
-                }
-
-                let html = '<div class="meta"><span>' + data.count + ' nodes found // ' + elapsed + 's</span>'
-                    + '<span class="engine-tag">' + esc(data.engine) + '</span>'
-                    + '<span class="engine-tag" style="border-color:rgba(57,255,20,0.3);color:var(--neon-green);background:rgba(57,255,20,0.05)">' + esc(data.region || currentRegion).toUpperCase() + '</span></div>';
+                const searchTime = data.search_ms != null ? data.search_ms + 'ms' : elapsed + 's';
+                let html = '<div class="meta"><span>' + data.count + ' nodes // search ' + searchTime + '</span>'
+                    + '<span class="tag tag-engine">' + esc(data.engine) + '</span>'
+                    + '<span class="tag tag-region">' + esc(data.region || currentRegion).toUpperCase() + '</span></div>';
 
                 data.results.forEach((r, i) => {
-                    const favicon = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(r.domain) + '&sz=32';
-                    html += '<div class="result" style="animation: fadeIn 0.3s ease ' + (i * 0.05) + 's both">';
-                    html += '<span class="result-index">' + String(i + 1).padStart(2, '0') + '</span>';
+                    const fav = 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(r.domain) + '&sz=32';
+                    html += '<div class="result" style="animation:fadeIn 0.35s ease ' + (i * 0.04) + 's both">';
+                    html += '<span class="r-idx">' + String(i+1).padStart(2,'0') + '</span>';
                     html += '<a href="' + esc(r.url) + '" target="_blank">';
-                    html += '<div class="result-domain"><img src="' + favicon + '" alt="">' + esc(r.domain) + '</div>';
-                    html += '<div class="result-title">' + esc(r.title) + '</div>';
-                    html += '</a>';
-                    if (r.snippet) html += '<div class="result-snippet">' + esc(r.snippet) + '</div>';
+                    html += '<div class="r-domain"><img src="' + fav + '" alt="">' + esc(r.domain) + '</div>';
+                    html += '<div class="r-title">' + esc(r.title) + '</div></a>';
+                    if (r.snippet) html += '<div class="r-snippet">' + esc(r.snippet) + '</div>';
                     html += '</div>';
                 });
 
                 out.innerHTML = html;
+
+                if (data.ai_summary) {
+                    const aiTime = data.ai_ms != null ? ' // ' + data.ai_ms + 'ms' : '';
+                    aiOut.innerHTML = '<div class="ai-box" id="ai-box">'
+                        + '<div class="ai-label"><div class="ai-dot"></div>NEURAL ANALYSIS' + aiTime + '</div>'
+                        + '<div class="ai-text">' + esc(data.ai_summary) + '</div>'
+                        + '<div class="ai-chat" id="ai-chat"></div>'
+                        + '<div class="ai-input-wrap">'
+                        + '<input class="ai-input" id="ai-input" placeholder="ask follow-up..." />'
+                        + '<button class="ai-send" onclick="sendChat()">SEND</button>'
+                        + '</div></div>';
+                    // Init chat history with the initial context
+                    chatHistory = [
+                        {role:'user', content: q},
+                        {role:'assistant', content: data.ai_summary}
+                    ];
+                    $('ai-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+                } else if (aiEnabled) {
+                    aiOut.innerHTML = '';
+                }
             } catch (e) {
                 out.innerHTML = '<div class="status error">CONNECTION_FAILED: ' + esc(e.message) + '</div>';
+                aiOut.innerHTML = '';
             }
         }
 
-        function esc(s) {
-            const d = document.createElement('div');
-            d.textContent = s || '';
-            return d.innerHTML;
-        }
-    </script>
+        let chatHistory = [];
 
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        async function sendChat() {
+            const input = $('ai-input');
+            const chatDiv = $('ai-chat');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            input.value = '';
+            chatHistory.push({role: 'user', content: msg});
+
+            chatDiv.innerHTML += '<div class="ai-msg ai-msg-user">' + esc(msg) + '</div>';
+            chatDiv.innerHTML += '<div class="ai-msg ai-msg-bot ai-loading" id="chat-loading"><span>THINKING...</span></div>';
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({messages: chatHistory}),
+                });
+                const data = await res.json();
+                const el = $('chat-loading');
+                if (el) el.remove();
+
+                const reply = data.reply || 'no response';
+                const ms = data.ms ? '<span class="ai-msg-time">' + data.ms + 'ms</span>' : '';
+                chatDiv.innerHTML += '<div class="ai-msg ai-msg-bot">' + esc(reply) + ms + '</div>';
+                chatHistory.push({role: 'assistant', content: reply});
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            } catch (e) {
+                const el = $('chat-loading');
+                if (el) el.remove();
+                chatDiv.innerHTML += '<div class="ai-msg" style="color:var(--red)">error: ' + esc(e.message) + '</div>';
+            }
         }
-    </style>
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    </script>
 </body>
 </html>

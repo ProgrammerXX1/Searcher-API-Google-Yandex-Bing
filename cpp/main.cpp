@@ -54,8 +54,20 @@ int main(int argc, char* argv[]) {
         if (num < 1) num = 1;
         if (num > 30) num = 30;
 
-        auto result = engine.search(q, eng, num, region);
+        bool with_ai = req.get_param_value("ai") == "true";
+        auto result = engine.search(q, eng, num, region, with_ai);
         res.set_content(result.dump(), "application/json");
+    });
+
+    // API: chat (follow-up questions with context)
+    svr.Post("/api/chat", [&](const httplib::Request& req, httplib::Response& res) {
+        auto body = json::parse(req.body, nullptr, false);
+        if (body.is_discarded() || !body.contains("messages")) {
+            res.set_content(R"({"error":"invalid body"})", "application/json");
+            return;
+        }
+        auto reply = engine.chat(body["messages"]);
+        res.set_content(reply.dump(), "application/json");
     });
 
     // API: regions
@@ -82,7 +94,7 @@ int main(int argc, char* argv[]) {
     });
 
     std::cout << "[*] SearchX C++ engine starting on port " << port << "\n";
-    std::cout << "[*] Engines: Google(Serper), Yandex(Cloud API)\n";
+    std::cout << "[*] Engines: Google(Decodo residential scrape), Yandex(Cloud API)\n";
     svr.listen("0.0.0.0", port);
     return 0;
 }
