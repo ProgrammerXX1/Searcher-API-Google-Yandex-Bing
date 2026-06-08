@@ -11,6 +11,12 @@ Restart=always
 RestartSec=2
 LimitNOFILE=65536
 
+# Resource isolation — don't starve L5 API
+CPUQuota=400%
+MemoryMax=2G
+MemoryHigh=1G
+TasksMax=128
+
 # Logging
 StandardOutput=journal
 StandardError=journal
