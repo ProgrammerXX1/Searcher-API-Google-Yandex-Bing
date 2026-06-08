@@ -1,0 +1,26 @@
+[Unit]
+Description=SearchX Multi-Engine Search API
+After=network.target
+
+[Service]
+Type=simple
+User=oysyn
+WorkingDirectory=/home/oysyn/Date_Index/anti-plagiarism/Back_Last/search-engine
+ExecStart=/home/oysyn/Date_Index/anti-plagiarism/Back_Last/search-engine/cpp/build/searchx --port 8085 --env .env --html index.html
+Restart=always
+RestartSec=2
+LimitNOFILE=65536
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=searchx
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/oysyn/Date_Index/anti-plagiarism/Back_Last/search-engine
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target
